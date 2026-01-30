@@ -134,22 +134,22 @@
   .noise {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
     mix-blend-mode: soft-light;
-    opacity: 0.35;
+    opacity: 0.3;
   }
 
   .glass {
-    background: hsl(var(--card) / 0.65);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border) / 0.65);
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.7);
     box-shadow: var(--shadow-1);
   }
 
   .shadow-premium {
-    box-shadow: var(--shadow-1), var(--shadow-2);
+    box-shadow: var(--shadow-1), 0 18px 50px hsl(var(--foreground) / 0.08);
   }
 
   .grid-fade {
-    background-image: radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.07) 1px, transparent 0);
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.06) 1px, transparent 0);
     background-size: 24px 24px;
     mask-image: radial-gradient(ellipse at 50% 40%, black 35%, transparent 72%);
   }
@@ -163,5 +163,135 @@
 
   .ring-focus {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /* Elevation utility classes */
+  .hover-elevate {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .hover-elevate:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+
+  .active-elevate-2:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* Enhanced button interactions - comprehensive coverage */
+  button,
+  a[role="button"],
+  .button-interactive,
+  [class*="Button"] {
+    @apply transition-all duration-200 ease-out;
+    cursor: pointer;
+  }
+
+  /* Hover states for all interactive elements */
+  button:not(:disabled):hover,
+  a[role="button"]:hover,
+  .button-interactive:hover,
+  [class*="Button"]:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Active/pressed states */
+  button:not(:disabled):active,
+  a[role="button"]:active,
+  .button-interactive:active,
+  [class*="Button"]:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* Primary button enhancements - default variant */
+  button:not([class*="variant"]):not(:disabled),
+  button[class*="default"]:not(:disabled),
+  [data-variant="default"]:not(:disabled) {
+    box-shadow:
+      0 1px 2px hsl(var(--primary) / 0.15),
+      0 2px 8px hsl(var(--primary) / 0.25);
+  }
+
+  button:not([class*="variant"]):not(:disabled):hover,
+  button[class*="default"]:not(:disabled):hover,
+  [data-variant="default"]:not(:disabled):hover {
+    box-shadow:
+      0 2px 4px hsl(var(--primary) / 0.2),
+      0 4px 12px hsl(var(--primary) / 0.35),
+      0 8px 20px hsl(var(--primary) / 0.15);
+  }
+
+  button:not([class*="variant"]):not(:disabled):active,
+  button[class*="default"]:not(:disabled):active,
+  [data-variant="default"]:not(:disabled):active {
+    box-shadow:
+      0 1px 2px hsl(var(--primary) / 0.1),
+      0 1px 4px hsl(var(--primary) / 0.2);
+  }
+
+  /* Secondary button enhancements */
+  button[class*="secondary"]:not(:disabled),
+  button[class*="outline"]:not(:disabled),
+  [data-variant="secondary"]:not(:disabled),
+  [data-variant="outline"]:not(:disabled) {
+    box-shadow:
+      0 1px 2px hsl(var(--foreground) / 0.06),
+      0 1px 3px hsl(var(--foreground) / 0.08);
+  }
+
+  button[class*="secondary"]:not(:disabled):hover,
+  button[class*="outline"]:not(:disabled):hover,
+  [data-variant="secondary"]:not(:disabled):hover,
+  [data-variant="outline"]:not(:disabled):hover {
+    box-shadow:
+      0 1px 3px hsl(var(--foreground) / 0.08),
+      0 2px 6px hsl(var(--foreground) / 0.12),
+      0 4px 12px hsl(var(--foreground) / 0.06);
+  }
+
+  button[class*="secondary"]:not(:disabled):active,
+  button[class*="outline"]:not(:disabled):active,
+  [data-variant="secondary"]:not(:disabled):active,
+  [data-variant="outline"]:not(:disabled):active {
+    box-shadow:
+      0 1px 1px hsl(var(--foreground) / 0.04),
+      0 1px 2px hsl(var(--foreground) / 0.06);
+  }
+
+  /* Ghost button enhancements */
+  button[class*="ghost"]:not(:disabled):hover,
+  [data-variant="ghost"]:not(:disabled):hover {
+    background: hsl(var(--foreground) / 0.05);
+  }
+
+  /* Link buttons */
+  button[class*="link"]:not(:disabled):hover,
+  [data-variant="link"]:not(:disabled):hover {
+    transform: none;
+  }
+
+  /* Disabled state */
+  button:disabled,
+  [disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none !important;
+  }
+
+  /* Icon buttons and circular buttons */
+  button[class*="icon"]:not(:disabled),
+  .rounded-full button:not(:disabled),
+  button.rounded-full:not(:disabled) {
+    box-shadow:
+      0 1px 2px hsl(var(--foreground) / 0.06),
+      0 1px 3px hsl(var(--foreground) / 0.08);
+  }
+
+  button[class*="icon"]:not(:disabled):hover,
+  .rounded-full button:not(:disabled):hover,
+  button.rounded-full:not(:disabled):hover {
+    box-shadow:
+      0 2px 4px hsl(var(--foreground) / 0.1),
+      0 3px 8px hsl(var(--foreground) / 0.12);
   }
 }
