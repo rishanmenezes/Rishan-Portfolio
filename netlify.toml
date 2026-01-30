@@ -1,0 +1,13 @@
+[build]
+  # Build command to compile the Vite React application
+  command = "npm run build"
+  
+  # Directory where Vite outputs the compiled application
+  publish = "dist/public"
+
+# Redirect all requests to index.html for client-side routing
+# This allows React Router (Wouter) to handle navigation
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
