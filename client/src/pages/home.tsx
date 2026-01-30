@@ -263,14 +263,14 @@ function Hero() {
                 className="mt-5 font-display text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
                 data-testid="text-hero-title"
               >
-                Hi, I’m <span className="text-gradient">{PROFILE.name}</span>.
+                I’m <span className="text-gradient">{PROFILE.name}</span>.
               </h1>
 
               <p
                 className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg"
                 data-testid="text-hero-subtitle"
               >
-                {PROFILE.title}
+                Third-year Computer Science student building modern, scalable web applications.
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -304,7 +304,15 @@ function Hero() {
                   onClick={() => scrollToId("contact")}
                   data-testid="button-contact"
                 >
-                  Contact
+                  Contact Me
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full opacity-50 cursor-not-allowed"
+                  disabled
+                  data-testid="button-download-resume"
+                >
+                  Download Resume
                 </Button>
               </div>
             </div>
@@ -501,6 +509,7 @@ function Projects() {
           .filter((r) => !r.fork && !r.archived)
           .filter((r) => !/prodigy/i.test(r.name) && !/prodigy/i.test(r.full_name))
           .filter((r) => (r.description ?? "").toLowerCase().includes("prodigy") === false)
+          .slice(0, 6)
           .sort((a, b) => {
             const sa = a.stargazers_count ?? 0;
             const sb = b.stargazers_count ?? 0;
@@ -536,15 +545,15 @@ function Projects() {
       <Container>
         <SectionHeader
           eyebrow="Projects"
-          title="Selected work"
-          subtitle="Pulled from GitHub and filtered to highlight personal, academic, and independent projects (excluding PRODIGY repos)."
+          title="Featured projects"
+          subtitle="A collection of my personal and academic work, ranging from web applications to software tools."
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="text-projects-meta">
             <span className="inline-flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-primary" />
-              Live from GitHub
+              Recent builds
             </span>
             <span className="hidden h-4 w-px bg-border sm:inline" />
             <span>{loading ? "Loading…" : `${visible.length} projects`}</span>
@@ -616,7 +625,7 @@ function Projects() {
               >
                 <div className="p-6 sm:p-7">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div className="flex-1">
                       <h3
                         className="font-display text-lg font-semibold tracking-tight"
                         data-testid={`text-project-name-${r.id}`}
@@ -624,10 +633,10 @@ function Projects() {
                         {r.name}
                       </h3>
                       <p
-                        className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground"
+                        className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground"
                         data-testid={`text-project-desc-${r.id}`}
                       >
-                        {r.description || "No description provided yet."}
+                        {r.description || "Personal project focusing on clean code and user experience."}
                       </p>
                     </div>
                     <a
@@ -644,27 +653,17 @@ function Projects() {
 
                   <div className="mt-5 flex flex-wrap items-center gap-2" data-testid={`list-project-meta-${r.id}`}>
                     {r.language ? (
-                      <Badge
-                        variant="secondary"
-                        className="rounded-full border border-border/60 bg-foreground/5"
-                        data-testid={`badge-project-language-${r.id}`}
-                      >
+                      <div className="flex items-center gap-1.5 rounded-full border border-border/60 bg-foreground/5 px-2.5 py-0.5 text-xs font-medium text-foreground/90">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                         {r.language}
-                      </Badge>
+                      </div>
                     ) : null}
                     <Badge
                       variant="secondary"
                       className="rounded-full border border-border/60 bg-foreground/5"
                       data-testid={`badge-project-updated-${r.id}`}
                     >
-                      Updated {formatDate(r.updated_at)}
-                    </Badge>
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full border border-border/60 bg-foreground/5"
-                      data-testid={`badge-project-stars-${r.id}`}
-                    >
-                      ★ {r.stargazers_count}
+                      {formatDate(r.updated_at)}
                     </Badge>
                   </div>
                 </div>
@@ -681,7 +680,7 @@ function Profiles() {
   const items = [
     { label: "LinkedIn", href: PROFILE.links.linkedin, icon: Linkedin },
     { label: "GitHub", href: PROFILE.links.github, icon: Github },
-    { label: "LeetCode", href: PROFILE.links.leetcode, icon: Code2 },
+    { label: "LeetCode", href: PROFILE.links.leetcode, icon: Code2, sub: "Problem-solving practice" },
     { label: "Instagram", href: PROFILE.links.instagram, icon: Sparkles },
   ] as const;
 
@@ -691,7 +690,7 @@ function Profiles() {
         <SectionHeader
           eyebrow="Profiles"
           title="Find me online"
-          subtitle="Recruiter-friendly links to my public work and professional presence."
+          subtitle="Explore my professional presence and technical activity across various platforms."
         />
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-testid="grid-profiles">
@@ -714,7 +713,7 @@ function Profiles() {
                 {item.label}
               </p>
               <p className="mt-1 text-xs text-muted-foreground" data-testid={`text-profile-url-${item.label.toLowerCase()}`}>
-                {item.href.replace(/^https?:\/\//, "")}
+                {item.sub || item.href.replace(/^https?:\/\//, "")}
               </p>
             </a>
           ))}
@@ -740,8 +739,8 @@ function Contact() {
       <Container>
         <SectionHeader
           eyebrow="Contact"
-          title="Let’s build something"
-          subtitle="For internships, placements, or collaborations—send a message and I’ll get back to you."
+          title="Let’s connect"
+          subtitle="I’m always open to discussing internships, software projects, or potential collaborations."
         />
 
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
@@ -805,7 +804,7 @@ function Contact() {
 
               <div className="mt-6 rounded-2xl border border-border/70 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 p-5">
                 <p className="text-sm text-muted-foreground" data-testid="text-contact-note">
-                  Prefer email? Use the form—it will open your email client with everything pre-filled.
+                  Feel free to reach out for internships, projects, or collaboration.
                 </p>
               </div>
             </div>

@@ -1,0 +1,72 @@
+You are a senior front-end engineer and recruiter-facing portfolio reviewer.
+
+Please review my existing portfolio code and make ONLY the following targeted improvements.
+Do NOT redesign everything. Refine and polish what exists.
+
+1. HERO SECTION (VERY IMPORTANT)
+- Rewrite the hero headline to be specific and recruiter-friendly.
+- Avoid generic phrases like “passionate developer”.
+- Use a clear value statement, e.g.:
+  “Third-year Computer Science student building modern, scalable web applications with React.”
+- Add a short subheading (1 line max) clarifying my focus: full-stack / frontend.
+- Ensure primary CTA buttons are clearly visible:
+  - “View Projects”
+  - “Contact Me”
+- Add an optional secondary CTA: “Download Resume” (disabled if no PDF exists).
+
+2. ABOUT SECTION
+- Reduce text length if needed (aim for ~80–120 words).
+- Focus on:
+  - Who I am (3rd year CSE student)
+  - What I build (web apps, real projects)
+  - What I’m looking for (internships / entry-level roles)
+- Remove buzzwords and keep language simple and confident.
+
+3. SKILLS SECTION
+- Group skills clearly:
+  - Languages
+  - Frontend
+  - Tools
+- Remove anything that looks inflated or unnecessary.
+- Make it scannable in under 5 seconds for recruiters.
+- Keep icons subtle and consistent.
+
+4. PROJECTS SECTION (HIGH IMPACT)
+- Keep GitHub auto-fetching, but:
+  - Limit displayed projects to top 4–6 repos.
+  - Sort by relevance (stars, recency, or manual priority list).
+- For each project card:
+  - Add a short “What it does” line.
+  - Add a “Tech Used” line.
+  - Keep descriptions concise and outcome-focused.
+- Ensure PRODIGY repos remain excluded everywhere.
+
+5. PROFILES SECTION
+- Keep LinkedIn, GitHub, LeetCode, Instagram.
+- Clearly label LeetCode as “Problem-solving practice” (not competitive).
+- Make icons consistent in size and hover behavior.
+
+6. CONTACT SECTION
+- Ensure email is clearly visible.
+- If a contact form exists, add basic validation and success feedback.
+- Add a short CTA line:
+  “Feel free to reach out for internships, projects, or collaboration.”
+
+7. UI / UX POLISH
+- Slightly reduce heavy glow effects if they distract from text.
+- Improve vertical spacing between sections.
+- Ensure text contrast meets accessibility standards.
+- Keep animations subtle and fast (no slow motion).
+
+8. SEO & META
+- Double-check page title and meta description sound professional.
+- Ensure headings follow correct hierarchy (H1 → H2 → H3).
+- Keep OG/Twitter tags as they are unless broken.
+
+9. FINAL CHECK
+- No false claims.
+- No exaggerated titles.
+- Portfolio should feel honest, confident, and internship-ready.
+- Code should remain clean, modular, and readable.
+
+Apply changes directly to the existing codebase.
