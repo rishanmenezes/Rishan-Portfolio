@@ -678,6 +678,7 @@ function Contact() {
         {
           from_name: name,
           from_email: email,
+          reply_to: email,
           message: message,
           to_email: PROFILE.email,
         },
