@@ -2,126 +2,245 @@ import { useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 
 interface Bubble {
-    x: number;
-    y: number;
-    radius: number;
-    vx: number;
-    vy: number;
-    opacity: number;
-    blur: number;
+  x: number;
+  y: number;
+  z: number; // 0..1 depth
+  layer: 0 | 1 | 2;
+  radius: number;
+  vx: number;
+  vy: number;
+  opacity: number;
+  blur: number;
 }
 
 export function AnimatedBackground() {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { theme, systemTheme } = useTheme();
-    const resolvedTheme = theme === "system" ? systemTheme : theme;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { theme, systemTheme } = useTheme();
+  const resolvedTheme = theme === "system" ? systemTheme : theme;
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-        // Set canvas size
-        const updateSize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        updateSize();
-        window.addEventListener("resize", updateSize);
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isMobile = window.innerWidth < 768;
+    const bubbleCount = isMobile ? 8 : 15;
 
-        // Check if reduced motion is preferred
-        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const scrollYRef = { current: 0 };
+    const onScroll = () => {
+      scrollYRef.current = window.scrollY || 0;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
 
-        // Reduce bubble count on mobile for performance
-        const isMobile = window.innerWidth < 768;
-        const bubbleCount = isMobile ? 8 : 15;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const updateSize = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+    };
 
-        // Create bubbles
-        const bubbles: Bubble[] = [];
-        for (let i = 0; i < bubbleCount; i++) {
-            bubbles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: Math.random() * 60 + 30, // 30-90px
-                vx: (Math.random() - 0.5) * 0.3, // Slow horizontal movement
-                vy: (Math.random() - 0.5) * 0.3, // Slow vertical movement
-                opacity: Math.random() * 0.15 + 0.05, // 0.05-0.2
-                blur: Math.random() * 30 + 10, // 10-40px blur for depth
-            });
+    updateSize();
+    window.addEventListener("resize", updateSize);
+
+    // Create bubbles once per theme change.
+    const bubbles: Bubble[] = [];
+    for (let i = 0; i < bubbleCount; i++) {
+      const z = Math.random(); // depth
+      const layer = z < 0.34 ? 0 : z < 0.67 ? 1 : 2;
+      const depthFactor = 0.55 + z * 0.85;
+      const layerSpeedMul = layer === 0 ? 0.42 : layer === 1 ? 0.7 : 1.05;
+      const layerBlurMul = layer === 0 ? 0.75 : layer === 1 ? 1 : 1.25;
+
+      bubbles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        z,
+        layer,
+        radius: (Math.random() * 70 + 25) * depthFactor, // depth scales size
+        vx: (Math.random() - 0.5) * 0.08 * depthFactor * layerSpeedMul,
+        vy: (Math.random() - 0.5) * 0.08 * depthFactor * layerSpeedMul,
+        opacity: (Math.random() * 0.12 + 0.04) * (0.65 + z * 0.55),
+        blur: (Math.random() * 22 + 10) * (0.7 + z * 0.65) * layerBlurMul,
+      });
+    }
+
+    // Section-aware parallax intensity (subtle, performance-safe).
+    const sectionParallaxMultRef = { current: 1 };
+    const sectionIds = ["hero", "about", "skills", "projects", "profiles", "contact"] as const;
+    const sectionMultipliers: Record<(typeof sectionIds)[number], number> = {
+      hero: 1.0,
+      about: 0.92,
+      skills: 0.95,
+      projects: 1.05,
+      profiles: 0.98,
+      contact: 0.9,
+    };
+    const observedSectionEls = new Set<Element>();
+    const sectionObserver = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => (b.intersectionRatio ?? 0) - (a.intersectionRatio ?? 0));
+        const top = visible[0]?.target as HTMLElement | undefined;
+        if (!top?.id) return;
+        if ((sectionMultipliers as Record<string, number>)[top.id] !== undefined) {
+          sectionParallaxMultRef.current = sectionMultipliers[top.id as (typeof sectionIds)[number]];
+        }
+      },
+      {
+        root: null,
+        threshold: [0, 0.15, 0.35, 0.55, 0.75],
+        rootMargin: "-15% 0px -60% 0px",
+      },
+    );
+
+    const observeSections = () => {
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        if (observedSectionEls.has(el)) continue;
+        sectionObserver.observe(el);
+        observedSectionEls.add(el);
+      }
+    };
+
+    observeSections();
+    const sectionsMo = new MutationObserver(() => observeSections());
+    sectionsMo.observe(document.body, { childList: true, subtree: true });
+
+    const cursorRef = { x: 0, y: 0 };
+    const enableMouse = !prefersReducedMotion && !isMobile;
+    let cleanupPointerMove = () => {};
+    if (enableMouse) {
+      const onPointerMove = (e: PointerEvent) => {
+        const nx = e.clientX / window.innerWidth - 0.5;
+        const ny = e.clientY / window.innerHeight - 0.5;
+        cursorRef.x = Math.max(-0.5, Math.min(0.5, nx * 2));
+        cursorRef.y = Math.max(-0.5, Math.min(0.5, ny * 2));
+      };
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      cleanupPointerMove = () => {
+        window.removeEventListener("pointermove", onPointerMove);
+      };
+    }
+
+    const drawBubble = (bubble: Bubble, scrollParallax: number) => {
+      const isDark = resolvedTheme === "dark";
+      const sectionMult = sectionParallaxMultRef.current;
+      const mouseMult = Math.max(0.85, Math.min(1.12, sectionMult));
+
+      // Parallax offset: distant bubbles move less.
+      const parallaxScale = 0.06 + bubble.z * 0.14;
+      const dx = scrollParallax * parallaxScale * (bubble.z - 0.4);
+      const mouseDx =
+        cursorRef.x *
+          (10 * dpr) *
+          (0.12 + bubble.z * 0.22) *
+          (bubble.layer === 0 ? 0.7 : bubble.layer === 1 ? 1 : 1.15) *
+          mouseMult;
+      const mouseDy =
+        cursorRef.y *
+          (10 * dpr) *
+          (0.08 + bubble.z * 0.18) *
+          (bubble.layer === 0 ? 0.7 : bubble.layer === 1 ? 1 : 1.15) *
+          mouseMult;
+
+      const drawX = bubble.x + dx + mouseDx;
+      const drawY =
+        bubble.y +
+        scrollParallax * parallaxScale * (0.25 + bubble.z) +
+        mouseDy;
+
+      const g = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, bubble.radius);
+
+      if (isDark) {
+        g.addColorStop(0, `rgba(96, 165, 250, ${bubble.opacity * 0.85})`);
+        g.addColorStop(0.5, `rgba(167, 139, 250, ${bubble.opacity * 0.55})`);
+        g.addColorStop(1, `rgba(96, 165, 250, 0)`);
+      } else {
+        g.addColorStop(0, `rgba(59, 130, 246, ${bubble.opacity * 0.7})`);
+        g.addColorStop(0.5, `rgba(139, 92, 246, ${bubble.opacity * 0.45})`);
+        g.addColorStop(1, `rgba(59, 130, 246, 0)`);
+      }
+
+      // Cap blur for mobile so it doesn't tank performance.
+      const blurPx = isMobile ? Math.min(bubble.blur * 0.85, 18) : Math.min(bubble.blur, 34);
+
+      ctx.filter = `blur(${blurPx}px)`;
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(drawX, drawY, bubble.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.filter = "none";
+    };
+
+    let raf = 0;
+    let mounted = true;
+    const shouldAnimate = !prefersReducedMotion;
+
+    const drawFrame = () => {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const scrollParallax =
+        (Math.max(0, scrollYRef.current) / (isMobile ? 900 : 700)) *
+        sectionParallaxMultRef.current;
+
+      for (const bubble of bubbles) {
+        if (shouldAnimate) {
+          bubble.x += bubble.vx;
+          bubble.y += bubble.vy;
+
+          const margin = bubble.radius * 1.2;
+          if (bubble.x < -margin || bubble.x > w + margin) bubble.vx *= -1;
+          if (bubble.y < -margin || bubble.y > h + margin) bubble.vy *= -1;
         }
 
-        // Animation loop
-        let animationId: number;
-        const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBubble(bubble, scrollParallax);
+      }
+    };
 
-            bubbles.forEach((bubble) => {
-                // Update position
-                if (!prefersReducedMotion) {
-                    bubble.x += bubble.vx;
-                    bubble.y += bubble.vy;
+    const animate = () => {
+      if (!mounted) return;
+      // Avoid wasted work when hidden.
+      if (document.visibilityState !== "visible") return;
 
-                    // Bounce off edges
-                    if (bubble.x < -bubble.radius || bubble.x > canvas.width + bubble.radius) {
-                        bubble.vx *= -1;
-                    }
-                    if (bubble.y < -bubble.radius || bubble.y > canvas.height + bubble.radius) {
-                        bubble.vy *= -1;
-                    }
-                }
+      drawFrame();
 
-                // Draw bubble with gradient
-                const gradient = ctx.createRadialGradient(
-                    bubble.x,
-                    bubble.y,
-                    0,
-                    bubble.x,
-                    bubble.y,
-                    bubble.radius
-                );
+      if (shouldAnimate) {
+        raf = requestAnimationFrame(animate);
+      }
+    };
 
-                // Color based on theme
-                const isDark = resolvedTheme === "dark";
-                if (isDark) {
-                    // Dark mode: blue-purple gradient
-                    gradient.addColorStop(0, `rgba(96, 165, 250, ${bubble.opacity * 0.8})`); // primary blue
-                    gradient.addColorStop(0.5, `rgba(167, 139, 250, ${bubble.opacity * 0.5})`); // accent purple
-                    gradient.addColorStop(1, `rgba(96, 165, 250, 0)`);
-                } else {
-                    // Light mode: softer blue-purple
-                    gradient.addColorStop(0, `rgba(59, 130, 246, ${bubble.opacity * 0.6})`); // primary blue
-                    gradient.addColorStop(0.5, `rgba(139, 92, 246, ${bubble.opacity * 0.4})`); // accent purple
-                    gradient.addColorStop(1, `rgba(59, 130, 246, 0)`);
-                }
+    animate();
 
-                // Apply blur for depth
-                ctx.filter = `blur(${bubble.blur}px)`;
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.filter = "none";
-            });
+    return () => {
+      mounted = false;
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", updateSize);
+      cleanupPointerMove();
+      sectionsMo.disconnect();
+      sectionObserver.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [resolvedTheme]);
 
-            animationId = requestAnimationFrame(animate);
-        };
-
-        animate();
-
-        return () => {
-            window.removeEventListener("resize", updateSize);
-            cancelAnimationFrame(animationId);
-        };
-    }, [resolvedTheme]);
-
-    return (
-        <canvas
-            ref={canvasRef}
-            className="pointer-events-none fixed inset-0 z-0"
-            style={{ opacity: 0.4 }}
-            aria-hidden="true"
-        />
-    );
+  return (
+    <>
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{ opacity: 0.35 }}
+        aria-hidden="true"
+      />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-background/0 via-background/10 to-background/55" />
+    </>
+  );
 }

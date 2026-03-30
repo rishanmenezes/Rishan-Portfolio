@@ -295,3 +295,18 @@
       0 3px 8px hsl(var(--foreground) / 0.12);
   }
 }
+
+@media (min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-snap-type: y proximity;
+  }
+
+  #hero,
+  #about,
+  #skills,
+  #projects,
+  #profiles,
+  #contact {
+    scroll-snap-align: start;
+  }
+}
