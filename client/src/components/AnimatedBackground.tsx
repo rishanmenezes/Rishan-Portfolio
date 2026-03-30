@@ -27,7 +27,9 @@ export function AnimatedBackground() {
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isMobile = window.innerWidth < 768;
-    const bubbleCount = isMobile ? 8 : 15;
+    const deviceMemory = (navigator as any).deviceMemory as number | undefined;
+    const isLowEnd = typeof deviceMemory === "number" && deviceMemory <= 2;
+    const bubbleCount = isMobile ? 8 : isLowEnd ? 10 : 15;
 
     const scrollYRef = { current: 0 };
     const onScroll = () => {
@@ -65,8 +67,8 @@ export function AnimatedBackground() {
         radius: (Math.random() * 70 + 25) * depthFactor, // depth scales size
         vx: (Math.random() - 0.5) * 0.08 * depthFactor * layerSpeedMul,
         vy: (Math.random() - 0.5) * 0.08 * depthFactor * layerSpeedMul,
-        opacity: (Math.random() * 0.12 + 0.04) * (0.65 + z * 0.55),
-        blur: (Math.random() * 22 + 10) * (0.7 + z * 0.65) * layerBlurMul,
+        opacity: (Math.random() * 0.10 + 0.03) * (0.52 + z * 0.35),
+        blur: (Math.random() * 20 + 10) * (0.7 + z * 0.6) * layerBlurMul,
       });
     }
 
@@ -74,12 +76,12 @@ export function AnimatedBackground() {
     const sectionParallaxMultRef = { current: 1 };
     const sectionIds = ["hero", "about", "skills", "projects", "profiles", "contact"] as const;
     const sectionMultipliers: Record<(typeof sectionIds)[number], number> = {
-      hero: 1.0,
-      about: 0.92,
-      skills: 0.95,
-      projects: 1.05,
-      profiles: 0.98,
-      contact: 0.9,
+      hero: 0.94,
+      about: 0.86,
+      skills: 0.88,
+      projects: 0.97,
+      profiles: 0.9,
+      contact: 0.84,
     };
     const observedSectionEls = new Set<Element>();
     const sectionObserver = new IntersectionObserver(
@@ -115,7 +117,7 @@ export function AnimatedBackground() {
     sectionsMo.observe(document.body, { childList: true, subtree: true });
 
     const cursorRef = { x: 0, y: 0 };
-    const enableMouse = !prefersReducedMotion && !isMobile;
+    const enableMouse = !prefersReducedMotion && !isMobile && !isLowEnd;
     let cleanupPointerMove = () => {};
     if (enableMouse) {
       const onPointerMove = (e: PointerEvent) => {
@@ -133,7 +135,7 @@ export function AnimatedBackground() {
     const drawBubble = (bubble: Bubble, scrollParallax: number) => {
       const isDark = resolvedTheme === "dark";
       const sectionMult = sectionParallaxMultRef.current;
-      const mouseMult = Math.max(0.85, Math.min(1.12, sectionMult));
+      const mouseMult = Math.max(0.88, Math.min(1.06, sectionMult));
 
       // Parallax offset: distant bubbles move less.
       const parallaxScale = 0.06 + bubble.z * 0.14;
@@ -183,6 +185,7 @@ export function AnimatedBackground() {
     let raf = 0;
     let mounted = true;
     const shouldAnimate = !prefersReducedMotion;
+    let lastDraw = 0;
 
     const drawFrame = () => {
       const w = canvas.width;
@@ -207,12 +210,16 @@ export function AnimatedBackground() {
       }
     };
 
-    const animate = () => {
+    const animate = (t = performance.now()) => {
       if (!mounted) return;
       // Avoid wasted work when hidden.
       if (document.visibilityState !== "visible") return;
 
-      drawFrame();
+      // Throttle drawing to reduce scroll/jank on slower devices.
+      if (t - lastDraw > 33) {
+        drawFrame();
+        lastDraw = t;
+      }
 
       if (shouldAnimate) {
         raf = requestAnimationFrame(animate);
@@ -237,10 +244,10 @@ export function AnimatedBackground() {
       <canvas
         ref={canvasRef}
         className="pointer-events-none fixed inset-0 z-0"
-        style={{ opacity: 0.35 }}
+        style={{ opacity: 0.26 }}
         aria-hidden="true"
       />
-      <div className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-background/0 via-background/10 to-background/55" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-background/0 via-background/6 to-background/40" />
     </>
   );
 }

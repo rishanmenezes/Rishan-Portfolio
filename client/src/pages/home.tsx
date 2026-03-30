@@ -38,7 +38,7 @@ const PROFILE = {
   location: "Mysuru, Karnataka, India",
   status: "Third Year Computer Science & Engineering Student at Maharaja Institute of Technology, Mysore.",
   about:
-    "I am a third-year Computer Science Engineering student with a strong interest in full-stack web development and software engineering. I enjoy building responsive, user-focused web applications and learning modern technologies through real-world projects. I focus on writing clean, maintainable code.",
+    "I am a third-year Computer Science Engineering student focused on frontend engineering and component-driven UI systems. I build performance-focused web experiences with React and TypeScript, and I enjoy turning product requirements into scalable, maintainable interfaces.",
   skills: {
     languages: ["C", "Python", "JavaScript", "TypeScript"],
     web: ["HTML", "CSS", "React.js", "Tailwind CSS"],
@@ -108,13 +108,9 @@ function useActiveSection(sectionIds: string[]) {
 function scrollToId(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
-  const navbarHeight = 80;
-  const elementPosition = el.getBoundingClientRect().top + window.pageYOffset;
-  const offsetPosition = elementPosition - navbarHeight;
-
-  window.scrollTo({
-    top: offsetPosition,
-    behavior: "smooth"
+  el.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
   });
 }
 
@@ -285,7 +281,7 @@ function Hero() {
                 className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg"
                 data-testid="text-hero-subtitle"
               >
-                Frontend Developer focused on building clean, high-performance web experiences
+                Frontend Developer specializing in React and modern UI systems
               </p>
 
               <div className="mt-6 flex items-center justify-center lg:justify-start gap-2 text-sm text-muted-foreground">
@@ -327,39 +323,23 @@ function Hero() {
             {/* Profile Image - RIGHT side */}
             <motion.div
               className="order-1 lg:order-2"
-              initial={
-                reduced
-                  ? undefined
-                  : { opacity: 0, y: 10, scale: 0.98 }
-              }
-              animate={
-                reduced
-                  ? undefined
-                  : {
-                      opacity: 1,
-                      y: [0, -5, 0],
-                      scale: 1,
-                    }
-              }
+              initial={reduced ? undefined : { opacity: 0, y: 10, scale: 0.98 }}
+              animate={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }}
               transition={
                 reduced
                   ? undefined
-                  : {
-                      opacity: { duration: 0.65, ease: [0.22, 1, 0.36, 1], delay: 0.04 },
-                      y: {
-                        duration: 4.4,
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                      },
-                    }
+                  : { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
               }
             >
               <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 blur-2xl" />
                 <img
                   src="/profile.jpg"
                   alt={PROFILE.name}
-                  className="relative h-56 w-56 sm:h-64 sm:w-64 lg:h-72 lg:w-72 rounded-full object-cover ring-2 ring-border/30 shadow-[0_0_40px_rgba(96,165,250,0.2)] ring-accent/15 opacity-95 transition-opacity duration-300 hover:opacity-100"
+                  className={cx(
+                    "relative h-56 w-56 sm:h-64 sm:w-64 lg:h-72 lg:w-72 rounded-full object-cover ring-2 ring-border/30",
+                    "shadow-[0_0_40px_rgba(96,165,250,0.2)] ring-accent/15 opacity-95 transition-opacity duration-300 hover:opacity-100",
+                    reduced ? false : "float-slow",
+                  )}
                   loading="eager"
                 />
               </div>
@@ -413,9 +393,9 @@ function About() {
                 </h3>
                 <ul className="mt-4 space-y-3 text-sm text-muted-foreground" data-testid="list-about-strengths">
                   {[
-                    "Clean, maintainable code with strong fundamentals",
-                    "Responsive UI with attention to detail",
-                    "Modern React + TypeScript development",
+                    "Component-driven UI with strong fundamentals",
+                    "Performance-focused frontend engineering",
+                    "Scalable React + TypeScript development",
                     "Continuous learning through hands-on projects",
                   ].map((item, idx) => (
                     <li key={idx} className="flex gap-3" data-testid={`item-strength-${idx}`}>
@@ -455,7 +435,7 @@ function Skills() {
           <SectionHeader
             eyebrow="Skills"
             title="Tools & technologies"
-            subtitle="Technologies I work with to build modern web applications."
+            subtitle="Technologies I use to build scalable, component-driven web experiences."
           />
 
           <div className="grid gap-6 md:grid-cols-2" data-testid="grid-skills">
@@ -634,6 +614,9 @@ function Contact() {
               <div className="text-center mb-6">
                 <p className="text-sm text-muted-foreground">
                   Have a project in mind or want to collaborate? Send me a message.
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground/90">
+                  Your message goes directly to my inbox.
                 </p>
               </div>
 

@@ -36,17 +36,26 @@ const prioritizedRepoNames = [
 
 const projectDescriptions: Record<string, string> = {
   ecofinds:
-    "Sustainable shopping experience with curated eco-friendly product listings.",
+    "Sustainable shopping interface with curated eco-friendly product listings.",
   skysmart:
-    "Flight booking interface with filtering and a modern, user-first UI.",
+    "Flight booking interface with fast filtering and a component-driven UI.",
   "college-news-portal":
     "Campus hub for announcements, events, and updates in one place.",
   "mahadasara-auction-arena":
     "Auction arena UI concept for items, bidding details, and structured listings.",
   clearcity:
-    "Urban cleanliness and civic awareness platform with a clean, accessible experience.",
+    "Urban cleanliness and civic awareness platform with an accessible UI.",
   shivcloud:
-    "Cloud-inspired frontend project showcasing responsive layouts and polished UI.",
+    "Cloud-inspired frontend showcasing responsive layouts and UI structure.",
+};
+
+const projectPurpose: Record<string, string> = {
+  ecofinds: "Built to simplify eco-friendly product discovery.",
+  skysmart: "Built to reduce time-to-decision when comparing flights.",
+  "college-news-portal": "Built to centralize campus announcements and events.",
+  "mahadasara-auction-arena": "Built to clarify bidding details and item listings.",
+  clearcity: "Built to promote civic reporting and local awareness.",
+  shivcloud: "Built to showcase responsive UI patterns and layout systems.",
 };
 
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -96,7 +105,7 @@ function generateDescription(repo: Pick<GitHubRepo, "name" | "topics" | "languag
     return `${pretty} built with ${lang}.`;
   }
 
-  return `${pretty} - modern project showcasing practical implementation.`;
+  return `${pretty} - component-driven project focused on practical implementation.`;
 }
 
 function isRecentWithin6Months(updatedAtIso: string) {
@@ -202,11 +211,13 @@ const ProjectCard = memo(function ProjectCard({
   description,
   techBadges,
   variant = "default",
+  purpose,
 }: {
   repo: GitHubRepo;
   description: string;
   techBadges: string[];
   variant?: "default" | "featured";
+  purpose?: string;
 }) {
   const live = repo.homepage?.trim() ?? "";
   const hasLive = live.length > 0;
@@ -230,7 +241,7 @@ const ProjectCard = memo(function ProjectCard({
         <div className="pointer-events-none absolute inset-0 opacity-70 bg-gradient-to-br from-primary/15 via-transparent to-accent/10" />
       ) : null}
       {isFeatured ? (
-        <div className="pointer-events-none absolute left-5 top-5 rounded-full border border-accent/20 bg-background/40 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/70 backdrop-blur">
+        <div className="pointer-events-none absolute left-5 top-5 rounded-full border border-accent/15 bg-background/30 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground/60 backdrop-blur">
           Featured
         </div>
       ) : null}
@@ -259,10 +270,15 @@ const ProjectCard = memo(function ProjectCard({
             >
               {description}
             </p>
+            {purpose ? (
+              <p className="mt-1.5 line-clamp-1 text-xs text-muted-foreground/90">
+                {purpose}
+              </p>
+            ) : null}
           </div>
         </div>
 
-        <div className="mt-3.5 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {techBadges.map((t) => (
             <Badge
               key={t}
@@ -274,7 +290,7 @@ const ProjectCard = memo(function ProjectCard({
           ))}
         </div>
 
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2.5">
           <Button
             asChild
             variant="secondary"
@@ -379,7 +395,11 @@ export default function GitHubProjects() {
   }, [visible]);
 
   return (
-    <section id="projects" className="py-20 sm:py-24" data-testid="section-projects">
+    <section
+      id="projects"
+      className="py-20 sm:py-24 min-h-[560px]"
+      data-testid="section-projects"
+    >
       <motion.div
         className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8"
         initial={{ opacity: 0, y: 12 }}
@@ -395,7 +415,7 @@ export default function GitHubProjects() {
             Featured projects
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            GitHub-driven portfolio highlights with clean UI and practical implementation.
+            GitHub-driven highlights with component-driven UI and performance-focused execution.
           </p>
         </div>
 
@@ -471,13 +491,19 @@ export default function GitHubProjects() {
                     repo={projectCards[0].repo}
                     description={projectCards[0].description}
                     techBadges={projectCards[0].techBadges}
+                    purpose={projectPurpose[projectCards[0].repo.name]}
                   />
                 </div>
               ) : null}
 
-              {projectCards.slice(1).map(({ repo, description, techBadges }) => (
+              {projectCards.slice(1).map(({ repo, description, techBadges }, idx) => (
                 <div key={repo.id} className="min-w-0">
-                  <ProjectCard repo={repo} description={description} techBadges={techBadges} />
+                  <ProjectCard
+                    repo={repo}
+                    description={description}
+                    techBadges={techBadges}
+                    purpose={idx === 0 ? projectPurpose[repo.name] : undefined}
+                  />
                 </div>
               ))}
             </>
