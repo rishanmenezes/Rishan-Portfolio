@@ -36,22 +36,22 @@ const prioritizedRepoNames = [
 
 const projectDescriptions: Record<string, string> = {
   ecofinds:
-    "Sustainable shopping interface with curated eco-friendly product listings.",
+    "E-commerce platform for sustainable products with advanced filtering and real-time inventory management. Built to help users make environmentally conscious shopping decisions.",
   skysmart:
-    "Flight booking interface with fast filtering and a component-driven UI.",
+    "Flight comparison tool with price tracking and intelligent filtering. Streamlines the booking process through intuitive UI and instant search results.",
   "college-news-portal":
-    "Campus hub for announcements, events, and updates in one place.",
+    "Centralized campus platform for announcements and event management. Replaces scattered communication channels with a unified hub for student engagement.",
   "mahadasara-auction-arena":
-    "Auction arena UI concept for items, bidding details, and structured listings.",
+    "Digital auction platform with real-time bidding and secure payment processing. Features comprehensive item management and transparent bidding history.",
   clearcity:
-    "Urban cleanliness and civic awareness platform with an accessible UI.",
+    "Civic engagement app for reporting and tracking local issues. Enables citizens to report problems directly to municipal authorities with photo evidence.",
   shivcloud:
-    "Cloud-inspired frontend showcasing responsive layouts and UI structure.",
+    "Cloud storage interface with file synchronization and sharing capabilities. Demonstrates advanced React patterns and responsive design principles.",
 };
 
 const projectPurpose: Record<string, string> = {
-  ecofinds: "Built to simplify eco-friendly product discovery.",
-  skysmart: "Built to reduce time-to-decision when comparing flights.",
+  ecofinds: "Built to simplify eco-friendly product discovery. Challenge: Implementing real-time inventory updates without overwhelming users. Solution: Used React Query with optimistic updates and debounced API calls.",
+  skysmart: "Built to reduce time-to-decision when comparing flights. Challenge: Handling complex filtering logic across multiple airlines and dates. Solution: Created a composable filter system with memoized selectors.",
   "college-news-portal": "Built to centralize campus announcements and events.",
   "mahadasara-auction-arena": "Built to clarify bidding details and item listings.",
   clearcity: "Built to promote civic reporting and local awareness.",
@@ -233,9 +233,15 @@ const ProjectCard = memo(function ProjectCard({
         isFeatured
           ? "relative overflow-hidden border border-accent/35 hover:-translate-y-1 hover:scale-[1.01]"
           : "hover:-translate-y-1 hover:scale-[1.01]",
-        "hover:shadow-[0_1px_0_hsl(var(--foreground)_/_0.06),_0_26px_70px_hsl(var(--foreground)_/_0.12)]",
+        "hover:shadow-[0_1px_0_hsl(var(--foreground)_/_0.06),_0_26px_70px_hsl(var(--foreground)_/_0.12)] focus:outline-none focus:ring-2 focus:ring-ring/40 focus:ring-offset-2 focus:ring-offset-background",
       )}
       data-testid={`card-project-${repo.name}`}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          window.open(repo.html_url, '_blank', 'noopener,noreferrer');
+        }
+      }}
     >
       {isFeatured ? (
         <div className="pointer-events-none absolute inset-0 opacity-70 bg-gradient-to-br from-primary/15 via-transparent to-accent/10" />
@@ -434,6 +440,12 @@ export default function GitHubProjects() {
               placeholder="Filter projects..."
               className="rounded-full"
               data-testid="input-project-search"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setQuery('');
+                }
+              }}
+              aria-label="Filter projects by name, technology, or description"
             />
           </div>
         </div>

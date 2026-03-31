@@ -29,7 +29,9 @@ export function AnimatedBackground() {
     const isMobile = window.innerWidth < 768;
     const deviceMemory = (navigator as any).deviceMemory as number | undefined;
     const isLowEnd = typeof deviceMemory === "number" && deviceMemory <= 2;
-    const bubbleCount = isMobile ? 8 : isLowEnd ? 10 : 15;
+    
+    // Significantly reduce bubble count for better performance
+    const bubbleCount = prefersReducedMotion ? 0 : isMobile ? 4 : isLowEnd ? 6 : 8;
 
     const scrollYRef = { current: 0 };
     const onScroll = () => {
@@ -182,9 +184,10 @@ export function AnimatedBackground() {
       ctx.filter = "none";
     };
 
+    // Disable animation on mobile and low-end devices for performance
+    const shouldAnimate = !prefersReducedMotion && !isMobile && !isLowEnd;
     let raf = 0;
     let mounted = true;
-    const shouldAnimate = !prefersReducedMotion;
     let lastDraw = 0;
 
     const drawFrame = () => {
@@ -215,8 +218,11 @@ export function AnimatedBackground() {
       // Avoid wasted work when hidden.
       if (document.visibilityState !== "visible") return;
 
-      // Throttle drawing to reduce scroll/jank on slower devices.
-      if (t - lastDraw > 33) {
+      // Throttle drawing to reduce scroll/jank on slower devices
+      const targetFPS = shouldAnimate ? 30 : 1; // Minimal updates when disabled
+      const frameInterval = 1000 / targetFPS;
+      
+      if (t - lastDraw > frameInterval) {
         drawFrame();
         lastDraw = t;
       }

@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { GitHubProjectsSkeleton } from "@/components/GitHubProjectsSkeleton";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import emailjs from "@emailjs/browser";
 
 const GitHubProjectsLazy = lazy(() => import("@/components/GitHubProjects"));
@@ -38,7 +39,7 @@ const PROFILE = {
   location: "Mysuru, Karnataka, India",
   status: "Third Year Computer Science & Engineering Student at Maharaja Institute of Technology, Mysore.",
   about:
-    "I am a third-year Computer Science Engineering student focused on frontend engineering and component-driven UI systems. I build performance-focused web experiences with React and TypeScript, and I enjoy turning product requirements into scalable, maintainable interfaces.",
+    "I'm a third-year Computer Science Engineering student passionate about building practical web applications that solve real problems. I enjoy the challenge of turning complex requirements into clean, maintainable code using React and TypeScript. When I'm not coding, you'll find me exploring new frameworks or contributing to open-source projects.",
   skills: {
     languages: ["C", "Python", "JavaScript", "TypeScript"],
     web: ["HTML", "CSS", "React.js", "Tailwind CSS"],
@@ -393,10 +394,10 @@ function About() {
                 </h3>
                 <ul className="mt-4 space-y-3 text-sm text-muted-foreground" data-testid="list-about-strengths">
                   {[
-                    "Component-driven UI with strong fundamentals",
-                    "Performance-focused frontend engineering",
-                    "Scalable React + TypeScript development",
-                    "Continuous learning through hands-on projects",
+                    "Built full-stack web applications from concept to deployment using React and TypeScript",
+                    "Optimized React applications with code splitting and lazy loading for better performance",
+                    "Implemented responsive designs using Tailwind CSS and modern CSS Grid/Flexbox",
+                    "Collaborated on team projects using Git workflows and agile methodologies",
                   ].map((item, idx) => (
                     <li key={idx} className="flex gap-3" data-testid={`item-strength-${idx}`}>
                       <span className="mt-1 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-foreground/5">
@@ -469,9 +470,11 @@ function Skills() {
 
 function Projects() {
   return (
-    <Suspense fallback={<GitHubProjectsSkeleton />}>
-      <GitHubProjectsLazy />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<GitHubProjectsSkeleton />}>
+        <GitHubProjectsLazy />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -760,11 +763,19 @@ function Footer() {
 export default function Home() {
   return (
     <div className="relative min-h-dvh" data-testid="page-home">
+      {/* Skip navigation links for accessibility */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary text-primary-foreground px-4 py-2 rounded-md z-50"
+      >
+        Skip to main content
+      </a>
+      
       <Suspense fallback={<div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" />}>
         <AnimatedBackgroundLazy />
       </Suspense>
       <TopNav />
-      <main>
+      <main id="main-content">
         <Hero />
         <div className="mx-auto h-px w-full max-w-6xl bg-border/60" aria-hidden="true" />
         <About />
