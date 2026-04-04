@@ -16,7 +16,7 @@ import {
   Trophy,
   Briefcase,
 } from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,10 +42,12 @@ const PROFILE = {
   about:
     "I build full-stack web applications and integrate AI where it adds real value. My work spans React/TypeScript frontends, Node.js backends, and Python-based ML systems — from e-commerce platforms with real-time inventory to trajectory prediction models using PyTorch. I focus on writing code that scales, not just code that works.",
   skills: {
-    frontend: ["React", "TypeScript", "Tailwind CSS"],
-    backend: ["Node.js", "Express", "FastAPI", "PostgreSQL"],
-    aiml: ["Python", "PyTorch", "Pandas", "NumPy"],
-    tools: ["Git", "Docker", "Vite"],
+    frontend: ["React.js", "TypeScript", "JavaScript", "HTML", "CSS", "Tailwind CSS"],
+    backend: ["Node.js", "Express.js", "FastAPI"],
+    aiml: ["Python", "PyTorch", "Machine Learning", "NLP"],
+    databases: ["PostgreSQL", "SQLite", "Prisma ORM"],
+    tools: ["Git", "GitHub", "Docker", "Vite", "EmailJS"],
+    concepts: ["REST APIs", "JWT Auth", "Full Stack Development", "API Integration", "Responsive Design"],
   },
   links: {
     linkedin: "https://www.linkedin.com/in/rishan-menezes/",
@@ -64,17 +66,84 @@ function useActiveSection(sectionIds: string[]) {
   const sectionKey = sectionIds.join("|");
 
   useEffect(() => {
+    // Navbar height — matches the CSS scroll-margin-top (96px)
+    const NAV_HEIGHT = 96;
+
+    // Track which sections are currently intersecting the viewport
+    const visibleSet = new Set<string>();
+
+    // Cache DOM lookups to avoid repeated getElementById in hot path
+    const elCache = new Map<string, HTMLElement>();
+    const getEl = (id: string): HTMLElement | null => {
+      let el = elCache.get(id);
+      if (el && el.isConnected) return el;
+      el = document.getElementById(id) ?? undefined;
+      if (el) elCache.set(id, el);
+      return el ?? null;
+    };
+
+    // rAF debounce — coalesces rapid observer callbacks during fast
+    // scrolls into a single state update per frame, preventing flicker.
+    let rafId = 0;
+
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => (b.intersectionRatio ?? 0) - (a.intersectionRatio ?? 0));
-        if (visible[0]?.target?.id) setActive(visible[0].target.id);
+        for (const entry of entries) {
+          const id = entry.target.id;
+          if (!id) continue;
+          if (entry.isIntersecting) {
+            visibleSet.add(id);
+          } else {
+            visibleSet.delete(id);
+          }
+        }
+
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          // From all currently visible sections, pick the one whose top
+          // is closest to the detection line (NAV_HEIGHT).
+          // This robustly handles tall sections like Projects where
+          // intersectionRatio is always tiny vs. shorter sections.
+          let best: string | null = null;
+          let bestDistance = Infinity;
+
+          for (const id of sectionIds) {
+            if (!visibleSet.has(id)) continue;
+            const el = getEl(id);
+            if (!el) continue;
+            const rect = el.getBoundingClientRect();
+            // Distance from section top to the detection line
+            const dist = Math.abs(rect.top - NAV_HEIGHT);
+            // Section top must be at or above the detection line (+20px
+            // tolerance), OR the section must span across it
+            if (rect.top <= NAV_HEIGHT + 20 || rect.bottom > NAV_HEIGHT) {
+              if (dist < bestDistance) {
+                bestDistance = dist;
+                best = id;
+              }
+            }
+          }
+
+          // Fallback: if no section is ideally positioned, use the
+          // first visible one in document order
+          if (!best && visibleSet.size > 0) {
+            for (const id of sectionIds) {
+              if (visibleSet.has(id)) {
+                best = id;
+                break;
+              }
+            }
+          }
+
+          if (best) setActive(best);
+        });
       },
       {
         root: null,
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-        rootMargin: "-80px 0px -50% 0px"
+        // Use a small threshold so even 1% visible triggers the callback.
+        // Use rootMargin to offset by navbar height at top.
+        threshold: [0, 0.1, 0.2, 0.5],
+        rootMargin: `-${NAV_HEIGHT}px 0px 0px 0px`,
       },
     );
 
@@ -82,7 +151,7 @@ function useActiveSection(sectionIds: string[]) {
 
     const observeEls = () => {
       for (const id of sectionIds) {
-        const el = document.getElementById(id);
+        const el = getEl(id);
         if (!el) continue;
         if (observed.has(el)) continue;
         observer.observe(el);
@@ -92,10 +161,12 @@ function useActiveSection(sectionIds: string[]) {
 
     observeEls();
 
+    // Re-observe when DOM changes (handles lazy-loaded sections)
     const mo = new MutationObserver(() => observeEls());
     mo.observe(document.body, { childList: true, subtree: true });
 
     return () => {
+      cancelAnimationFrame(rafId);
       mo.disconnect();
       observer.disconnect();
     };
@@ -554,11 +625,16 @@ function About() {
 }
 
 function Skills() {
+  const coreSkills = new Set(["React.js", "TypeScript", "Python", "Node.js", "PostgreSQL", "PyTorch"]);
+
+  // Category-specific accent hues for subtle visual differentiation
   const groups = [
-    { label: "Frontend", items: PROFILE.skills.frontend },
-    { label: "Backend", items: PROFILE.skills.backend },
-    { label: "AI / ML", items: PROFILE.skills.aiml },
-    { label: "Tools", items: PROFILE.skills.tools },
+    { label: "Frontend",         icon: "🎨", items: PROFILE.skills.frontend,  hue: "210 90% 62%" },
+    { label: "Backend",          icon: "⚙️", items: PROFILE.skills.backend,   hue: "160 60% 45%" },
+    { label: "AI / ML",          icon: "🧠", items: PROFILE.skills.aiml,      hue: "267 76% 56%" },
+    { label: "Databases",        icon: "🗄️", items: PROFILE.skills.databases, hue: "32 85% 55%" },
+    { label: "Tools & Platforms", icon: "🔧", items: PROFILE.skills.tools,    hue: "190 70% 50%" },
+    { label: "Core Concepts",    icon: "📐", items: PROFILE.skills.concepts,  hue: "340 65% 55%" },
   ] as const;
 
   return (
@@ -576,25 +652,55 @@ function Skills() {
             subtitle="Technologies I use across the stack — from component-driven frontends to ML pipelines."
           />
 
-          <div className="grid gap-5 md:grid-cols-2" data-testid="grid-skills">
+          {/* Legend: core skills indicator */}
+          <motion.div className="mb-6 flex items-center gap-2" variants={itemVariants}>
+            <span className="inline-block h-2 w-2 rounded-full bg-accent/60" />
+            <span className="text-xs text-muted-foreground/70 tracking-wide">Highlighted = most used in projects</span>
+          </motion.div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-testid="grid-skills">
             {groups.map((g) => (
               <motion.div key={g.label} variants={itemVariants}>
-                <Card className="glass shadow-premium rounded-2xl card-elevate gradient-border" data-testid={`card-skill-${g.label.toLowerCase().replace(/\s+/g, "-")}`}>
+                <Card className="glass shadow-premium rounded-2xl card-elevate gradient-border h-full" data-testid={`card-skill-${g.label.toLowerCase().replace(/\s+/g, "-")}`}>
                   <div className="p-6 sm:p-7">
-                    <h3 className="font-display text-base font-bold" data-testid={`text-skill-title-${g.label.toLowerCase().replace(/\s+/g, "-")}`}>
-                      {g.label}
-                    </h3>
-                    <div className="mt-4 flex flex-wrap gap-2" data-testid={`list-skill-badges-${g.label.toLowerCase().replace(/\s+/g, "-")}`}>
-                      {g.items.map((item) => (
-                        <Badge
-                          key={item}
-                          variant="secondary"
-                          className="rounded-full border border-border/50 bg-foreground/[0.03] px-3 py-1 text-foreground/85 transition-colors duration-200 hover:bg-foreground/[0.08] hover:text-foreground"
-                          data-testid={`badge-skill-${item.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                        >
-                          {item}
-                        </Badge>
-                      ))}
+                    {/* Category header with tinted icon container */}
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="flex h-9 w-9 items-center justify-center rounded-xl text-base"
+                        style={{ background: `hsl(${g.hue} / 0.1)`, boxShadow: `inset 0 0 0 1px hsl(${g.hue} / 0.15)` }}
+                        role="img"
+                        aria-hidden="true"
+                      >
+                        {g.icon}
+                      </span>
+                      <div>
+                        <h3 className="font-display text-sm font-bold tracking-tight" data-testid={`text-skill-title-${g.label.toLowerCase().replace(/\s+/g, "-")}`}>
+                          {g.label}
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground/50">{g.items.length} technologies</p>
+                      </div>
+                    </div>
+
+                    {/* Skill badges */}
+                    <div className="mt-5 flex flex-wrap gap-2" data-testid={`list-skill-badges-${g.label.toLowerCase().replace(/\s+/g, "-")}`}>
+                      {g.items.map((item) => {
+                        const isCore = coreSkills.has(item);
+                        return (
+                          <Badge
+                            key={item}
+                            variant="secondary"
+                            className={cx(
+                              "skill-badge rounded-full border px-3 py-1 text-[13px] transition-all duration-200",
+                              isCore
+                                ? "border-accent/25 bg-accent/[0.07] text-foreground font-semibold ring-1 ring-accent/15 hover:bg-accent/[0.14] hover:ring-accent/30 hover:shadow-[0_0_16px_hsl(var(--accent)_/_0.12)]"
+                                : "border-border/40 bg-foreground/[0.025] text-foreground/80 hover:bg-foreground/[0.07] hover:text-foreground hover:border-border/60"
+                            )}
+                            data-testid={`badge-skill-${item.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                          >
+                            {item}
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
                 </Card>
@@ -622,7 +728,7 @@ function Experience() {
     {
       icon: Briefcase,
       title: "Full Stack Apps",
-      text: "Built multiple production-ready applications using React, TypeScript, Express, and PostgreSQL — from concept to deployment.",
+      text: "Built multiple production-ready applications using React, TypeScript, Express, and PostgreSQL.",
     },
   ];
 
@@ -818,118 +924,118 @@ function Contact() {
           <motion.div className="mx-auto max-w-2xl" variants={itemVariants}>
             <Card className="glass shadow-premium rounded-2xl card-elevate gradient-border" data-testid="card-contact-form">
               <div className="p-6 sm:p-8">
-              <div className="text-center mb-6">
-                <p className="text-sm text-muted-foreground">
-                  Have a project in mind or want to collaborate? Send me a message.
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground/70">
-                  Your message goes directly to my inbox.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="grid gap-4">
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                  className="rounded-xl border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-200 focus:border-accent/40 focus:bg-background/70"
-                  disabled={status === "loading"}
-                  required
-                  data-testid="input-name"
-                />
-                <Input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your email"
-                  type="email"
-                  className="rounded-xl border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-200 focus:border-accent/40 focus:bg-background/70"
-                  disabled={status === "loading"}
-                  required
-                  data-testid="input-email"
-                />
-                <Textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Your message"
-                  className="min-h-[160px] rounded-xl border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-200 focus:border-accent/40 focus:bg-background/70"
-                  disabled={status === "loading"}
-                  required
-                  data-testid="input-message"
-                />
-
-                {/* Reserved space to avoid layout shift */}
-                <div className="min-h-[48px]" aria-live="polite">
-                  {status === "success" ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6, scale: 0.99 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ duration: 0.22 }}
-                      className="flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/20 px-4 py-3 text-sm text-green-600 dark:text-green-400"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>Message sent. I'll reply soon.</span>
-                    </motion.div>
-                  ) : null}
-
-                  {status === "error" ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6, scale: 0.99 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ duration: 0.22 }}
-                      className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-600 dark:text-red-400"
-                    >
-                      <AlertCircle className="h-4 w-4" />
-                      <span>{errorMessage}</span>
-                    </motion.div>
-                  ) : null}
+                <div className="text-center mb-6">
+                  <p className="text-sm text-muted-foreground">
+                    Have a project in mind or want to collaborate? Send me a message.
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground/70">
+                    Your message goes directly to my inbox.
+                  </p>
                 </div>
 
-                <div className="mt-2 flex flex-wrap gap-3">
-                  <Button
-                    type="submit"
-                    className="rounded-full px-6 hover:shadow-[0_0_30px_hsl(var(--accent)_/_0.2)] hover:scale-[1.03]"
-                    disabled={status === "loading" || status === "success"}
-                    data-testid="button-send-message"
-                  >
-                    {status === "loading" ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending...
-                      </>
-                    ) : status === "success" ? (
-                      <>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Sent!
-                      </>
-                    ) : (
-                      <>
-                        Send Message
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="rounded-full px-6 hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.15)] hover:scale-[1.03]"
-                    onClick={() => {
-                      setName("");
-                      setEmail("");
-                      setMessage("");
-                      setStatus("idle");
-                      setErrorMessage("");
-                    }}
+                <form onSubmit={handleSubmit} className="grid gap-4">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    className="rounded-xl border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-200 focus:border-accent/40 focus:bg-background/70"
                     disabled={status === "loading"}
-                    data-testid="button-clear-form"
-                  >
-                    Clear
-                  </Button>
-                </div>
+                    required
+                    data-testid="input-name"
+                  />
+                  <Input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your email"
+                    type="email"
+                    className="rounded-xl border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-200 focus:border-accent/40 focus:bg-background/70"
+                    disabled={status === "loading"}
+                    required
+                    data-testid="input-email"
+                  />
+                  <Textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Your message"
+                    className="min-h-[160px] rounded-xl border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-200 focus:border-accent/40 focus:bg-background/70"
+                    disabled={status === "loading"}
+                    required
+                    data-testid="input-message"
+                  />
 
-                <p className="text-xs text-center text-muted-foreground/70" data-testid="text-contact-disclaimer">
-                  Or email me directly at <a href={`mailto:${PROFILE.email}`} className="link-glow transition-colors duration-200 hover:text-foreground">{PROFILE.email}</a>
-                </p>
-              </form>
+                  {/* Reserved space to avoid layout shift */}
+                  <div className="min-h-[48px]" aria-live="polite">
+                    {status === "success" ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6, scale: 0.99 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.22 }}
+                        className="flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/20 px-4 py-3 text-sm text-green-600 dark:text-green-400"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Message sent. I'll reply soon.</span>
+                      </motion.div>
+                    ) : null}
+
+                    {status === "error" ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6, scale: 0.99 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.22 }}
+                        className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-600 dark:text-red-400"
+                      >
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{errorMessage}</span>
+                      </motion.div>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    <Button
+                      type="submit"
+                      className="rounded-full px-6 hover:shadow-[0_0_30px_hsl(var(--accent)_/_0.2)] hover:scale-[1.03]"
+                      disabled={status === "loading" || status === "success"}
+                      data-testid="button-send-message"
+                    >
+                      {status === "loading" ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : status === "success" ? (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Sent!
+                        </>
+                      ) : (
+                        <>
+                          Send Message
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="rounded-full px-6 hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.15)] hover:scale-[1.03]"
+                      onClick={() => {
+                        setName("");
+                        setEmail("");
+                        setMessage("");
+                        setStatus("idle");
+                        setErrorMessage("");
+                      }}
+                      disabled={status === "loading"}
+                      data-testid="button-clear-form"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-center text-muted-foreground/70" data-testid="text-contact-disclaimer">
+                    Or email me directly at <a href={`mailto:${PROFILE.email}`} className="link-glow transition-colors duration-200 hover:text-foreground">{PROFILE.email}</a>
+                  </p>
+                </form>
               </div>
             </Card>
           </motion.div>

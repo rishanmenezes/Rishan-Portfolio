@@ -32,6 +32,7 @@ type CuratedProject = {
   what: string;
   challenge: string;
   solution: string;
+  role?: string;
   tech: string[];
   category: "fullstack" | "ai-ml";
   featured?: boolean;
@@ -88,21 +89,21 @@ const CURATED_PROJECTS: CuratedProject[] = [
     featured: true,
   },
   {
+    repoName: "ai-study-companion",
+    displayName: "AI Study Companion",
+    what: "AI-powered study assistant that generates quizzes, summaries, and flashcards from uploaded course material.",
+    challenge: "Processing diverse document formats and generating pedagogically useful content under tight deadlines.",
+    solution: "Designed a modular RAG pipeline with format-agnostic parsing and prompt-engineered content generation.",
+    tech: ["Python", "FastAPI", "OpenAI API", "React"],
+    category: "ai-ml",
+  },
+  {
     repoName: "openenv-customer-support",
     displayName: "OpenEnv — Smart Support RL",
     what: "Reinforcement learning environment for automated customer support ticket resolution.",
     challenge: "Designing a deterministic, graded environment with realistic task difficulty scaling.",
     solution: "Task-based RL environment with per-step reward functions and a deterministic grader.",
     tech: ["Python", "FastAPI", "Docker", "OpenAI API"],
-    category: "ai-ml",
-  },
-  {
-    repoName: "red-wine-quality-prediction-ann",
-    displayName: "Wine Quality Prediction",
-    what: "ANN-based quality classifier for red wine using physicochemical properties.",
-    challenge: "Imbalanced classes in quality ratings skewing model accuracy.",
-    solution: "Feature engineering with normalization and architecture tuning for balanced prediction.",
-    tech: ["Python", "Pandas", "NumPy", "Jupyter"],
     category: "ai-ml",
   },
   {
@@ -248,7 +249,7 @@ const ProjectCard = memo(function ProjectCard({
               height: isHovered || isFeatured ? "auto" : 0,
               opacity: isHovered || isFeatured ? 1 : 0,
             }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3, ease: EASE_OUT }}
           >
             <div className="rounded-lg border border-border/30 bg-background/30 p-3 backdrop-blur-sm">
               <p className="text-xs text-muted-foreground/80">
@@ -259,6 +260,12 @@ const ProjectCard = memo(function ProjectCard({
                 <span className="font-semibold text-foreground/65">Solution</span>{" "}
                 — {project.solution}
               </p>
+              {project.role ? (
+                <p className="mt-1.5 text-xs text-muted-foreground/80">
+                  <span className="font-semibold text-foreground/65">Role</span>{" "}
+                  — {project.role}
+                </p>
+              ) : null}
             </div>
           </motion.div>
 

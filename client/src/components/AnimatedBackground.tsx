@@ -76,11 +76,12 @@ export function AnimatedBackground() {
 
     // Section-aware parallax intensity (subtle, performance-safe).
     const sectionParallaxMultRef = { current: 1 };
-    const sectionIds = ["hero", "about", "skills", "projects", "profiles", "contact"] as const;
+    const sectionIds = ["hero", "about", "skills", "experience", "projects", "profiles", "contact"] as const;
     const sectionMultipliers: Record<(typeof sectionIds)[number], number> = {
       hero: 0.94,
       about: 0.86,
       skills: 0.88,
+      experience: 0.9,
       projects: 0.97,
       profiles: 0.9,
       contact: 0.84,
