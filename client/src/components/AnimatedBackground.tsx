@@ -250,7 +250,7 @@ export function AnimatedBackground() {
       <canvas
         ref={canvasRef}
         className="pointer-events-none fixed inset-0 z-0"
-        style={{ opacity: 0.26 }}
+        style={{ opacity: 0.22 }}
         aria-hidden="true"
       />
       <div className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-background/0 via-background/6 to-background/40" />

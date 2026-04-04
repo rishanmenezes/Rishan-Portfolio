@@ -16,6 +16,9 @@ export function GitHubProjectsSkeleton() {
           <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight leading-[1.15] sm:text-3xl text-foreground">
             Featured projects
           </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Curated work spanning full-stack applications and AI/ML systems — each built to solve a specific problem.
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

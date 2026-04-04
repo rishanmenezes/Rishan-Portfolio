@@ -1,11 +1,10 @@
 import { memo, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { ExternalLink, Github } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ExternalLink, Github, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -19,320 +18,328 @@ type GitHubRepo = {
   fork: boolean;
   homepage: string | null;
   language: string | null;
-  topics?: string[]; // May be undefined depending on GitHub response shape
+  topics?: string[];
 };
 
 const GITHUB_USER = "rishanmenezes";
 const PROFILE_URL = `https://github.com/${GITHUB_USER}`;
 
-const prioritizedRepoNames = [
-  "ecofinds",
-  "skysmart",
-  "college-news-portal",
-  "mahadasara-auction-arena",
-  "clearcity",
-  "shivcloud",
-] as const;
+// ─── Curated project data ────────────────────────────────────────────
 
-const projectDescriptions: Record<string, string> = {
-  ecofinds:
-    "E-commerce platform for sustainable products with advanced filtering and real-time inventory management. Built to help users make environmentally conscious shopping decisions.",
-  skysmart:
-    "Flight comparison tool with price tracking and intelligent filtering. Streamlines the booking process through intuitive UI and instant search results.",
-  "college-news-portal":
-    "Centralized campus platform for announcements and event management. Replaces scattered communication channels with a unified hub for student engagement.",
-  "mahadasara-auction-arena":
-    "Digital auction platform with real-time bidding and secure payment processing. Features comprehensive item management and transparent bidding history.",
-  clearcity:
-    "Civic engagement app for reporting and tracking local issues. Enables citizens to report problems directly to municipal authorities with photo evidence.",
-  shivcloud:
-    "Cloud storage interface with file synchronization and sharing capabilities. Demonstrates advanced React patterns and responsive design principles.",
+type CuratedProject = {
+  repoName: string;
+  displayName: string;
+  what: string;
+  challenge: string;
+  solution: string;
+  tech: string[];
+  category: "fullstack" | "ai-ml";
+  featured?: boolean;
 };
 
-const projectPurpose: Record<string, string> = {
-  ecofinds: "Built to simplify eco-friendly product discovery. Challenge: Implementing real-time inventory updates without overwhelming users. Solution: Used React Query with optimistic updates and debounced API calls.",
-  skysmart: "Built to reduce time-to-decision when comparing flights. Challenge: Handling complex filtering logic across multiple airlines and dates. Solution: Created a composable filter system with memoized selectors.",
-  "college-news-portal": "Built to centralize campus announcements and events.",
-  "mahadasara-auction-arena": "Built to clarify bidding details and item listings.",
-  clearcity: "Built to promote civic reporting and local awareness.",
-  shivcloud: "Built to showcase responsive UI patterns and layout systems.",
-};
+const CURATED_PROJECTS: CuratedProject[] = [
+  // ── Full Stack ──
+  {
+    repoName: "ecofinds",
+    displayName: "EcoFinds",
+    what: "E-commerce platform for sustainable products with real-time inventory and advanced filtering.",
+    challenge: "Handling real-time inventory updates without degrading search performance.",
+    solution: "Implemented optimistic updates with debounced API calls and memoized filter pipelines.",
+    tech: ["React", "TypeScript", "Express", "PostgreSQL"],
+    category: "fullstack",
+    featured: true,
+  },
+  {
+    repoName: "skysmart",
+    displayName: "SkySmart",
+    what: "Flight comparison tool with price tracking and multi-airline filtering.",
+    challenge: "Complex filtering logic across multiple airlines, dates, and price ranges.",
+    solution: "Built a composable filter system with memoized selectors for instant results.",
+    tech: ["React", "TypeScript", "Node.js", "Tailwind CSS"],
+    category: "fullstack",
+  },
+  {
+    repoName: "college-news-portal",
+    displayName: "College News Portal",
+    what: "Campus platform centralizing announcements, events, and student engagement.",
+    challenge: "Replacing fragmented communication channels with a single unified hub.",
+    solution: "Role-based content management with category filtering and real-time updates.",
+    tech: ["JavaScript", "Node.js", "Express"],
+    category: "fullstack",
+  },
+  {
+    repoName: "mahadasara-auction-arena",
+    displayName: "Mahadasara Auction Arena",
+    what: "Digital auction platform with item management and transparent bidding history.",
+    challenge: "Ensuring bid integrity and preventing race conditions in concurrent bidding.",
+    solution: "Transaction-safe bid processing with optimistic locking and real-time state sync.",
+    tech: ["React", "TypeScript", "Express", "PostgreSQL"],
+    category: "fullstack",
+  },
+  // ── AI / ML ──
+  {
+    repoName: "Intent-Trajectory-Prediction",
+    displayName: "Intent & Trajectory Prediction",
+    what: "Multi-modal trajectory prediction system for autonomous driving using PyTorch.",
+    challenge: "Predicting accurate future trajectories from noisy, multi-agent sensor data.",
+    solution: "Goal-conditioned prediction with social context features achieving competitive ADE/FDE.",
+    tech: ["Python", "PyTorch", "NumPy", "Pandas"],
+    category: "ai-ml",
+    featured: true,
+  },
+  {
+    repoName: "openenv-customer-support",
+    displayName: "OpenEnv — Smart Support RL",
+    what: "Reinforcement learning environment for automated customer support ticket resolution.",
+    challenge: "Designing a deterministic, graded environment with realistic task difficulty scaling.",
+    solution: "Task-based RL environment with per-step reward functions and a deterministic grader.",
+    tech: ["Python", "FastAPI", "Docker", "OpenAI API"],
+    category: "ai-ml",
+  },
+  {
+    repoName: "red-wine-quality-prediction-ann",
+    displayName: "Wine Quality Prediction",
+    what: "ANN-based quality classifier for red wine using physicochemical properties.",
+    challenge: "Imbalanced classes in quality ratings skewing model accuracy.",
+    solution: "Feature engineering with normalization and architecture tuning for balanced prediction.",
+    tech: ["Python", "Pandas", "NumPy", "Jupyter"],
+    category: "ai-ml",
+  },
+  {
+    repoName: "sentiment-analysis-logistic-regression",
+    displayName: "Sentiment Analysis",
+    what: "NLP sentiment classifier using logistic regression on text review data.",
+    challenge: "Extracting meaningful features from unstructured text with limited preprocessing.",
+    solution: "TF-IDF vectorization with regularized logistic regression for high-accuracy classification.",
+    tech: ["Python", "Pandas", "NumPy", "Jupyter"],
+    category: "ai-ml",
+  },
+];
 
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
-let cache:
-  | {
-      repos: GitHubRepo[];
-      fetchedAt: number;
-    }
-  | null = null;
+// ─── GitHub API fetch (fallback data source) ─────────────────────────
+
+const CACHE_TTL_MS = 10 * 60 * 1000;
+let cache: { repos: GitHubRepo[]; fetchedAt: number } | null = null;
 let inflight: Promise<GitHubRepo[]> | null = null;
 
-function toTopicLabel(topic: string) {
-  // Keep labels readable; topics are typically lowercase with hyphens.
-  return topic
-    .trim()
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function cleanDescription(desc: string) {
-  return desc.replace(/\s+/g, " ").trim();
-}
-
-function formatPrettyRepoName(name: string) {
-  return name
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function generateDescription(repo: Pick<GitHubRepo, "name" | "topics" | "language">) {
-  const pretty = formatPrettyRepoName(repo.name);
-  const topics = (repo.topics ?? []).filter(Boolean);
-  const topTopics = topics.slice(0, 3);
-  const lang = repo.language ? repo.language : "";
-
-  if (topTopics.length > 0 && lang) {
-    return `${pretty} featuring ${topTopics.join(
-      ", ",
-    )} built with ${lang}.`;
-  }
-
-  if (topTopics.length > 0) {
-    return `${pretty} featuring ${topTopics.join(", ")}.`;
-  }
-
-  if (lang) {
-    return `${pretty} built with ${lang}.`;
-  }
-
-  return `${pretty} - component-driven project focused on practical implementation.`;
-}
-
-function isRecentWithin6Months(updatedAtIso: string) {
-  const sixMonthsAgo = Date.now() - 1000 * 60 * 60 * 24 * 183; // Approx. 6 months
-  const updated = Date.parse(updatedAtIso);
-  return Number.isFinite(updated) && updated >= sixMonthsAgo;
-}
-
 async function fetchReposFromGitHub(signal?: AbortSignal): Promise<GitHubRepo[]> {
-  const perPage = 100;
-  const url = `https://api.github.com/users/${GITHUB_USER}/repos?per_page=${perPage}`;
-
+  const url = `https://api.github.com/users/${GITHUB_USER}/repos?per_page=100`;
   const res = await fetch(url, {
     method: "GET",
-    headers: {
-      // Request standard JSON; GitHub may still omit `topics` depending on API response.
-      Accept: "application/vnd.github+json",
-    },
+    headers: { Accept: "application/vnd.github+json" },
     signal,
   });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(
-      `GitHub API error (${res.status}). ${text ? text.slice(0, 200) : ""}`.trim(),
-    );
+    throw new Error(`GitHub API error (${res.status}). ${text ? text.slice(0, 200) : ""}`.trim());
   }
 
-  const data = (await res.json()) as GitHubRepo[];
-  return data;
+  return (await res.json()) as GitHubRepo[];
 }
 
-function inferTechBadges(repo: GitHubRepo) {
-  const badges: string[] = [];
-  const seen = new Set<string>();
+// ─── Animation variants ──────────────────────────────────────────────
 
-  if (repo.language) {
-    const normalized = repo.language.toLowerCase();
-    if (!seen.has(normalized)) {
-      seen.add(normalized);
-      badges.push(repo.language);
-    }
-  }
+const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-  const topics = repo.topics ?? [];
-  for (const topic of topics) {
-    if (!topic) continue;
-    const normalized = topic.toLowerCase();
-    if (seen.has(normalized)) continue;
-    seen.add(normalized);
-    badges.push(toTopicLabel(topic));
-    if (badges.length >= 5) break;
-  }
+const gridVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.06 },
+  },
+};
 
-  return badges;
-}
+const cardVariants = {
+  hidden: { opacity: 0, y: 16, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.45, ease: EASE_OUT },
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
+    scale: 0.98,
+    transition: { duration: 0.25, ease: EASE_OUT },
+  },
+};
 
-function projectPriorityIndex(name: string) {
-  const i = prioritizedRepoNames.indexOf(name as (typeof prioritizedRepoNames)[number]);
-  return i === -1 ? Number.MAX_SAFE_INTEGER : i;
-}
-
-function selectDescription(repo: GitHubRepo) {
-  if (repo.description && repo.description.trim()) {
-    return cleanDescription(repo.description);
-  }
-  const mapped = projectDescriptions[repo.name];
-  if (mapped) return mapped;
-  return generateDescription(repo);
-}
-
-function applyProjectRules(repos: GitHubRepo[]) {
-  const filtered = repos.filter((repo) => {
-    const name = repo.name;
-    if (name.toUpperCase().includes("PRODIGY")) return false;
-    if (name === GITHUB_USER) return false;
-    if (repo.fork) return false;
-
-    const hasDescription = !!repo.description?.trim();
-    const hasStars = repo.stargazers_count > 0;
-    const recent = isRecentWithin6Months(repo.updated_at);
-
-    return hasDescription || hasStars || recent;
-  });
-
-  filtered.sort((a, b) => {
-    const pa = projectPriorityIndex(a.name);
-    const pb = projectPriorityIndex(b.name);
-    if (pa !== pb) return pa - pb;
-
-    if (a.stargazers_count !== b.stargazers_count) {
-      return b.stargazers_count - a.stargazers_count;
-    }
-
-    return Date.parse(b.updated_at) - Date.parse(a.updated_at);
-  });
-
-  return filtered.slice(0, 6);
-}
+// ─── Project Card ────────────────────────────────────────────────────
 
 const ProjectCard = memo(function ProjectCard({
+  project,
   repo,
-  description,
-  techBadges,
   variant = "default",
-  purpose,
 }: {
-  repo: GitHubRepo;
-  description: string;
-  techBadges: string[];
+  project: CuratedProject;
+  repo?: GitHubRepo;
   variant?: "default" | "featured";
-  purpose?: string;
 }) {
-  const live = repo.homepage?.trim() ?? "";
+  const repoUrl = repo?.html_url ?? `https://github.com/${GITHUB_USER}/${project.repoName}`;
+  const live = repo?.homepage?.trim() ?? "";
   const hasLive = live.length > 0;
-  const liveHref =
-    hasLive && /^https?:\/\//i.test(live) ? live : hasLive ? `https://${live}` : "";
+  const liveHref = hasLive && /^https?:\/\//i.test(live) ? live : hasLive ? `https://${live}` : "";
+  const [isHovered, setIsHovered] = useState(false);
 
   const isFeatured = variant === "featured";
 
   return (
-    <Card
-      className={cn(
-        "glass rounded-2xl shadow-premium transition-all duration-300",
-        isFeatured
-          ? "relative overflow-hidden border border-accent/35 hover:-translate-y-1 hover:scale-[1.01]"
-          : "hover:-translate-y-1 hover:scale-[1.01]",
-        "hover:shadow-[0_1px_0_hsl(var(--foreground)_/_0.06),_0_26px_70px_hsl(var(--foreground)_/_0.12)] focus:outline-none focus:ring-2 focus:ring-ring/40 focus:ring-offset-2 focus:ring-offset-background",
-      )}
-      data-testid={`card-project-${repo.name}`}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          window.open(repo.html_url, '_blank', 'noopener,noreferrer');
-        }
-      }}
+    <motion.div
+      variants={cardVariants}
+      layout
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {isFeatured ? (
-        <div className="pointer-events-none absolute inset-0 opacity-70 bg-gradient-to-br from-primary/15 via-transparent to-accent/10" />
-      ) : null}
-      {isFeatured ? (
-        <div className="pointer-events-none absolute left-5 top-5 rounded-full border border-accent/15 bg-background/30 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground/60 backdrop-blur">
-          Featured
-        </div>
-      ) : null}
-
-      <div
+      <Card
         className={cn(
-          "flex h-full flex-col p-7 sm:p-8",
-          isFeatured ? "min-h-[340px]" : "min-h-[260px]",
+          "glass rounded-2xl shadow-premium card-elevate overflow-hidden",
+          isFeatured
+            ? "gradient-border-always"
+            : "gradient-border",
         )}
+        data-testid={`card-project-${project.repoName}`}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            window.open(repoUrl, "_blank", "noopener,noreferrer");
+          }
+        }}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <h3
-              className={cn(
-                "font-display font-semibold tracking-tight",
-                isFeatured ? "text-2xl" : "text-lg",
-              )}
-            >
-              {repo.name}
-            </h3>
-            <p
-              className={cn(
-                "mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground sm:text-sm",
-                isFeatured ? "text-sm" : "text-sm",
-              )}
-            >
-              {description}
-            </p>
-            {purpose ? (
-              <p className="mt-1.5 line-clamp-1 text-xs text-muted-foreground/90">
-                {purpose}
+        {/* Featured gradient overlay */}
+        {isFeatured ? (
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/8" />
+        ) : null}
+
+        <div
+          className={cn(
+            "relative flex h-full flex-col p-7 sm:p-8",
+            isFeatured ? "min-h-[360px]" : "min-h-[280px]",
+          )}
+        >
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              {isFeatured ? (
+                <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent backdrop-blur">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  Featured
+                </div>
+              ) : null}
+              <h3
+                className={cn(
+                  "font-display font-bold tracking-tight",
+                  isFeatured ? "text-2xl sm:text-3xl" : "text-lg",
+                )}
+              >
+                {project.displayName}
+              </h3>
+              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                {project.what}
               </p>
-            ) : null}
+            </div>
           </div>
-        </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {techBadges.map((t) => (
-            <Badge
-              key={t}
-              variant="secondary"
-              className="rounded-full border border-border/60 bg-foreground/5 text-foreground/90"
-            >
-              {t}
-            </Badge>
-          ))}
-        </div>
-
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2.5">
-          <Button
-            asChild
-            variant="secondary"
-            className="rounded-full hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.18)] hover:scale-[1.02]"
-            data-testid={`button-github-${repo.name}`}
+          {/* Challenge / Solution — reveals on hover */}
+          <motion.div
+            className="mt-4 space-y-2 overflow-hidden"
+            initial={false}
+            animate={{
+              height: isHovered || isFeatured ? "auto" : 0,
+              opacity: isHovered || isFeatured ? 1 : 0,
+            }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
-            <a href={repo.html_url} target="_blank" rel="noreferrer">
-              <Github className="h-4.5 w-4.5" />
-              GitHub
-            </a>
-          </Button>
+            <div className="rounded-lg border border-border/30 bg-background/30 p-3 backdrop-blur-sm">
+              <p className="text-xs text-muted-foreground/80">
+                <span className="font-semibold text-foreground/65">Challenge</span>{" "}
+                — {project.challenge}
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground/80">
+                <span className="font-semibold text-foreground/65">Solution</span>{" "}
+                — {project.solution}
+              </p>
+            </div>
+          </motion.div>
 
-          {hasLive && (
+          {/* Tech badges */}
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {project.tech.map((t) => (
+              <Badge
+                key={t}
+                variant="secondary"
+                className="rounded-full border border-border/40 bg-foreground/[0.03] px-2.5 py-0.5 text-xs text-foreground/80 transition-colors duration-200 hover:bg-foreground/[0.08]"
+              >
+                {t}
+              </Badge>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
             <Button
               asChild
               variant="secondary"
-              className="rounded-full hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.18)] hover:scale-[1.02]"
-              data-testid={`button-live-${repo.name}`}
+              className="rounded-full px-4 hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.15)] hover:scale-[1.03]"
+              data-testid={`button-github-${project.repoName}`}
             >
-              <a href={liveHref} target="_blank" rel="noreferrer">
-                <ExternalLink className="h-4.5 w-4.5" />
-                Live
+              <a href={repoUrl} target="_blank" rel="noreferrer">
+                <Github className="h-4 w-4" />
+                GitHub
               </a>
             </Button>
-          )}
+
+            {hasLive && (
+              <Button
+                asChild
+                variant="secondary"
+                className="rounded-full px-4 hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.15)] hover:scale-[1.03]"
+                data-testid={`button-live-${project.repoName}`}
+              >
+                <a href={liveHref} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                  Live
+                </a>
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </motion.div>
   );
 });
+
+// ─── Section animation variants ──────────────────────────────────────
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: EASE_OUT,
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: EASE_OUT },
+  },
+};
+
+// ─── Main Component ──────────────────────────────────────────────────
 
 export default function GitHubProjects() {
   const [repos, setRepos] = useState<GitHubRepo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<"all" | "fullstack" | "ai-ml">("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -376,169 +383,180 @@ export default function GitHubProjects() {
     };
   }, []);
 
-  const topProjects = useMemo(() => {
-    if (!repos) return [];
-    return applyProjectRules(repos);
+  const repoMap = useMemo(() => {
+    if (!repos) return new Map<string, GitHubRepo>();
+    const map = new Map<string, GitHubRepo>();
+    for (const r of repos) {
+      map.set(r.name.toLowerCase(), r);
+    }
+    return map;
   }, [repos]);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return topProjects;
+  const filteredProjects = useMemo(() => {
+    if (activeCategory === "all") return CURATED_PROJECTS;
+    return CURATED_PROJECTS.filter((p) => p.category === activeCategory);
+  }, [activeCategory]);
 
-    return topProjects.filter((p) => {
-      const tech = inferTechBadges(p).join(" ").toLowerCase();
-      const hay = `${p.name} ${p.description ?? ""} ${tech}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [query, topProjects]);
+  const fullstackCount = CURATED_PROJECTS.filter((p) => p.category === "fullstack").length;
+  const aimlCount = CURATED_PROJECTS.filter((p) => p.category === "ai-ml").length;
 
-  const projectCards = useMemo(() => {
-    return visible.map((repo) => ({
-      repo,
-      description: selectDescription(repo),
-      techBadges: inferTechBadges(repo),
-    }));
-  }, [visible]);
+  const categories = [
+    { key: "all" as const, label: "All", count: CURATED_PROJECTS.length },
+    { key: "fullstack" as const, label: "Full Stack", count: fullstackCount },
+    { key: "ai-ml" as const, label: "AI / ML", count: aimlCount },
+  ];
 
   return (
     <section
       id="projects"
-      className="py-20 sm:py-24 min-h-[560px]"
+      className="py-24 sm:py-28 min-h-[560px]"
       data-testid="section-projects"
     >
       <motion.div
         className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8"
-        initial={{ opacity: 0, y: 12 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
       >
-        <div className="mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
-            <span className="font-medium tracking-wide">Projects</span>
+        <motion.div className="mb-12" variants={itemVariants}>
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3.5 py-1.5 text-xs text-muted-foreground backdrop-blur">
+            <Sparkles className="h-3 w-3" />
+            <span className="font-medium tracking-wider uppercase">Projects</span>
           </div>
-          <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight leading-[1.15] sm:text-3xl text-foreground">
+          <h2 className="mt-5 font-display text-3xl font-bold tracking-tight leading-[1.12] sm:text-4xl text-foreground">
             Featured projects
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            GitHub-driven highlights with component-driven UI and performance-focused execution.
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground/80 sm:text-base">
+            Curated work spanning full-stack applications and AI/ML systems — each built to solve a specific problem.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              {visible.length} {visible.length === 1 ? "project" : "projects"}
-            </span>
-          </div>
+        {/* Category toggles */}
+        <motion.div className="flex flex-wrap items-center gap-1.5 mb-8" variants={itemVariants}>
+          {categories.map((cat) => (
+            <button
+              key={cat.key}
+              type="button"
+              onClick={() => setActiveCategory(cat.key)}
+              className={cn(
+                "ring-focus relative inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all duration-250",
+                activeCategory === cat.key
+                  ? "text-foreground"
+                  : "text-muted-foreground/70 hover:text-foreground",
+              )}
+              data-testid={`button-category-${cat.key}`}
+            >
+              {activeCategory === cat.key && (
+                <motion.span
+                  layoutId="project-category-indicator"
+                  className="absolute inset-0 rounded-full bg-foreground/[0.06] border border-border/50"
+                  transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                />
+              )}
+              <span className="relative z-10">{cat.label}</span>
+              <span className="relative z-10 text-xs text-muted-foreground/50">({cat.count})</span>
+            </button>
+          ))}
+        </motion.div>
 
-          <div className="w-full sm:w-[320px]">
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter projects..."
-              className="rounded-full"
-              data-testid="input-project-search"
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  setQuery('');
-                }
-              }}
-              aria-label="Filter projects by name, technology, or description"
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-5 md:grid-cols-2" data-testid="grid-projects">
-          {loading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="glass rounded-2xl shadow-premium">
-                <div className="p-6 sm:p-7">
-                  <Skeleton className="h-5 w-2/3" />
-                  <div className="mt-3 space-y-3">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-11/12" />
-                    <Skeleton className="h-6 w-4/5" />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeCategory}
+            className="grid gap-5 md:grid-cols-2"
+            data-testid="grid-projects"
+            variants={gridVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="glass rounded-2xl shadow-premium">
+                  <div className="p-7 sm:p-8">
+                    <Skeleton className="h-5 w-2/3" />
+                    <div className="mt-4 space-y-3">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-11/12" />
+                      <Skeleton className="h-6 w-4/5" />
+                    </div>
+                  </div>
+                </Card>
+              ))
+            ) : error ? (
+              <Card className="glass rounded-2xl md:col-span-2">
+                <div className="p-8 text-center">
+                  <p className="font-display text-lg font-bold">Projects unavailable</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Unable to fetch repositories right now. You can still view everything on GitHub.
+                  </p>
+                  <div className="mt-6 flex justify-center">
+                    <Button
+                      asChild
+                      className="rounded-full px-5 hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.18)] hover:scale-[1.03]"
+                      variant="secondary"
+                    >
+                      <a href={PROFILE_URL} target="_blank" rel="noreferrer">
+                        <Github className="h-4.5 w-4.5" />
+                        View on GitHub
+                      </a>
+                    </Button>
                   </div>
                 </div>
               </Card>
-            ))
-          ) : error ? (
-            <Card className="glass rounded-2xl md:col-span-2">
-              <div className="p-8 text-center">
-                <p className="font-display text-lg font-semibold">Projects unavailable</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Unable to fetch repositories right now. You can still view everything on GitHub.
-                </p>
-                <div className="mt-6 flex justify-center">
-                  <Button
-                    asChild
-                    className="rounded-full hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.18)] hover:scale-[1.02]"
-                    variant="secondary"
-                  >
-                    <a href={PROFILE_URL} target="_blank" rel="noreferrer">
-                      <Github className="h-4.5 w-4.5" />
-                      View on GitHub
-                    </a>
-                  </Button>
+            ) : filteredProjects.length === 0 ? (
+              <Card className="glass rounded-2xl md:col-span-2">
+                <div className="p-8 text-center">
+                  <p className="font-display text-lg font-bold">No matching projects</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    No projects match the current filter.
+                  </p>
                 </div>
-              </div>
-            </Card>
-          ) : visible.length === 0 ? (
-            <Card className="glass rounded-2xl md:col-span-2">
-              <div className="p-8 text-center">
-                <p className="font-display text-lg font-semibold">No matching projects</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No additional projects match the current filter.
-                </p>
-              </div>
-            </Card>
-          ) : (
-            <>
-              {projectCards[0] ? (
-                <div className="md:col-span-2 min-w-0">
-                  <ProjectCard
-                    variant="featured"
-                    repo={projectCards[0].repo}
-                    description={projectCards[0].description}
-                    techBadges={projectCards[0].techBadges}
-                    purpose={projectPurpose[projectCards[0].repo.name]}
-                  />
-                </div>
-              ) : null}
+              </Card>
+            ) : (
+              <>
+                {filteredProjects.map((project) => {
+                  const repo = repoMap.get(project.repoName.toLowerCase());
+                  const isFeatured = project.featured && (activeCategory === "all" || activeCategory === project.category);
+                  const isFirstFeatured = isFeatured && filteredProjects.indexOf(project) === filteredProjects.findIndex((p) => p.featured && (activeCategory === "all" || activeCategory === p.category));
 
-              {projectCards.slice(1).map(({ repo, description, techBadges }, idx) => (
-                <div key={repo.id} className="min-w-0">
-                  <ProjectCard
-                    repo={repo}
-                    description={description}
-                    techBadges={techBadges}
-                    purpose={idx === 0 ? projectPurpose[repo.name] : undefined}
-                  />
-                </div>
-              ))}
-            </>
-          )}
-        </div>
+                  return (
+                    <div
+                      key={project.repoName}
+                      className={cn("min-w-0", isFirstFeatured && "md:col-span-2")}
+                    >
+                      <ProjectCard
+                        project={project}
+                        repo={repo}
+                        variant={isFirstFeatured ? "featured" : "default"}
+                      />
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-        <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-muted-foreground">
-            Showing the latest matching repositories from GitHub.
+        <motion.div
+          className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+          variants={itemVariants}
+        >
+          <p className="text-xs text-muted-foreground/60">
+            Project data synced with GitHub. Descriptions are curated.
           </p>
           <Button
             asChild
             variant="secondary"
-            className="rounded-full hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.18)] hover:scale-[1.02]"
+            className="rounded-full px-5 hover:shadow-[0_0_26px_hsl(var(--accent)_/_0.15)] hover:scale-[1.03]"
           >
             <a href={PROFILE_URL} target="_blank" rel="noreferrer">
               View more on GitHub
               <ExternalLink className="h-4.5 w-4.5" />
             </a>
           </Button>
-        </div>
+        </motion.div>
       </motion.div>
     </section>
   );
 }
-
